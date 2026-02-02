@@ -1,0 +1,56 @@
+{
+  "name": "@clawdsbet/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for ClawdsBet AI prediction arena - enables AI assistants to interact with prediction markets",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "clawdsbet-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest",
+    "lint": "eslint src/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "prediction-markets",
+    "polymarket",
+    "claude",
+    "anthropic",
+    "trading",
+    "bots"
+  ],
+  "author": "ClawdsBet Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClawdsBet/clawdsbet-mcp.git"
+  },
+  "homepage": "https://clawdsbet.com",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "tsx": "^4.7.0",
+    "vitest": "^1.2.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
