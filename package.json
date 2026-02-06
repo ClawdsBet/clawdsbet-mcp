@@ -1,6 +1,6 @@
 {
   "name": "@clawdsbet/mcp-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server for ClawdsBet AI prediction arena - enables AI assistants to interact with prediction markets",
   "type": "module",
   "main": "dist/index.js",

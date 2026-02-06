@@ -6,11 +6,13 @@
  *
  * Tools provided:
  * - get_leaderboard: Get current bot rankings
- * - get_markets: List active prediction markets
+ * - get_markets: List/search prediction markets with sorting and filtering
  * - get_bot_stats: Get detailed stats for a specific bot
  * - get_market_details: Get details about a specific market
  * - place_bet: Place a bet on a market (requires API key)
  * - get_recent_activity: Get recent betting activity
+ * - get_categories: Get all unique market categories
+ * - get_sync_status: Get market sync system health and cursor position
  *
  * Usage:
  *   npx @clawdsbet/mcp-server
@@ -49,22 +51,40 @@ const TOOLS: Tool[] = [
   },
   {
     name: "get_markets",
-    description: "List active prediction markets that bots can bet on. Markets include politics, crypto, sports, and more from Polymarket.",
+    description: "List and search prediction markets. Supports filtering by status/category, full-text search, sorting, and pagination.",
     inputSchema: {
       type: "object" as const,
       properties: {
         status: {
           type: "string",
-          enum: ["active", "resolved", "all"],
+          enum: ["active", "ended", "resolved"],
           description: "Filter markets by status (default: active)",
         },
         category: {
           type: "string",
           description: "Filter by category (e.g., 'politics', 'crypto', 'sports')",
         },
-        limit: {
+        search: {
+          type: "string",
+          description: "Search markets by question text",
+        },
+        order_by: {
+          type: "string",
+          enum: ["end_date", "volume", "liquidity", "created_at"],
+          description: "Sort field (default: end_date)",
+        },
+        order_direction: {
+          type: "string",
+          enum: ["asc", "desc"],
+          description: "Sort direction (default: asc)",
+        },
+        page: {
           type: "number",
-          description: "Maximum number of markets to return (default: 20)",
+          description: "Page number for pagination (default: 1)",
+        },
+        per_page: {
+          type: "number",
+          description: "Markets per page (default: 20)",
         },
       },
     },
@@ -141,6 +161,22 @@ const TOOLS: Tool[] = [
       },
     },
   },
+  {
+    name: "get_categories",
+    description: "Get all unique market categories for filtering markets.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
+  {
+    name: "get_sync_status",
+    description: "Get the health and status of the market sync system, including cursor position, last sync time, and run counter.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
 ];
 
 // API helper
@@ -177,15 +213,21 @@ async function getLeaderboard(limit: number = 10): Promise<unknown> {
 async function getMarkets(
   status: string = "active",
   category?: string,
-  limit: number = 20
+  search?: string,
+  orderBy?: string,
+  orderDirection?: string,
+  page?: number,
+  perPage: number = 20
 ): Promise<unknown> {
   const params = new URLSearchParams({
     status,
-    limit: limit.toString(),
+    per_page: perPage.toString(),
   });
-  if (category) {
-    params.set("category", category);
-  }
+  if (category) params.set("category", category);
+  if (search) params.set("search", search);
+  if (orderBy) params.set("order_by", orderBy);
+  if (orderDirection) params.set("order_direction", orderDirection);
+  if (page) params.set("page", page.toString());
   const data = await apiCall(`/markets?${params.toString()}`);
   return data;
 }
@@ -236,11 +278,24 @@ async function getRecentActivity(
   return data;
 }
 
+async function getCategories(): Promise<unknown> {
+  const data = await apiCall("/markets/categories");
+  return data;
+}
+
+async function getSyncStatus(): Promise<unknown> {
+  const [syncHealth, syncCursor] = await Promise.all([
+    apiCall("/monitoring/health/sync"),
+    apiCall("/monitoring/sync-cursor"),
+  ]);
+  return { sync_health: syncHealth, sync_cursor: syncCursor };
+}
+
 // Create server
 const server = new Server(
   {
     name: "clawdsbet",
-    version: "1.0.0",
+    version: "1.1.0",
   },
   {
     capabilities: {
@@ -268,13 +323,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
         break;
 
-      case "get_markets":
+      case "get_markets": {
+        const mArgs = args as {
+          status?: string;
+          category?: string;
+          search?: string;
+          order_by?: string;
+          order_direction?: string;
+          page?: number;
+          per_page?: number;
+        };
         result = await getMarkets(
-          (args as { status?: string }).status,
-          (args as { category?: string }).category,
-          (args as { limit?: number }).limit
+          mArgs.status,
+          mArgs.category,
+          mArgs.search,
+          mArgs.order_by,
+          mArgs.order_direction,
+          mArgs.page,
+          mArgs.per_page
         );
         break;
+      }
 
       case "get_bot_stats":
         result = await getBotStats(
@@ -302,6 +371,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           (args as { limit?: number }).limit,
           (args as { bot_id?: string }).bot_id
         );
+        break;
+
+      case "get_categories":
+        result = await getCategories();
+        break;
+
+      case "get_sync_status":
+        result = await getSyncStatus();
         break;
 
       default:
