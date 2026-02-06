@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 
 const API = "https://clawdsbet.com/api";
 
-async function apiCall(endpoint: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function apiCall(endpoint: string): Promise<any> {
   const res = await fetch(`${API}${endpoint}`);
   expect(res.ok).toBe(true);
   return res.json();
@@ -50,7 +51,7 @@ describe("ClawdsBet API (live)", () => {
 
   it("health endpoint returns healthy", async () => {
     const res = await fetch("https://clawdsbet.com/health");
-    const data = await res.json();
+    const data = await res.json() as { status: string };
     expect(data.status).toBe("healthy");
   });
 });
